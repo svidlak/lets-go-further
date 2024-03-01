@@ -7,12 +7,22 @@ import (
 
 var (
 	ErrRecordNotFound = errors.New("record not found")
+	ErrEditConflict   = errors.New("edit conflict")
 )
 
-func handleSqlErrorResult(err error) error {
+func handleSqlNotFoundResultError(err error) error {
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return ErrRecordNotFound
+	default:
+		return err
+	}
+}
+
+func handleSqlUpdateConflictResultError(err error) error {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return ErrEditConflict
 	default:
 		return err
 	}
