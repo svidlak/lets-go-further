@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -144,6 +145,63 @@ func (m MovieModel) Delete(id int64) error {
 	return nil
 }
 
+func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, error) {
+	var (
+		orderCol       = filters.sortColumn()
+		orderDirection = filters.sortDirection()
+		offsetBy       = filters.offset()
+		limit          = filters.limit()
+	)
+
+	query := fmt.Sprintf(`
+        SELECT id, created_at, title, year, runtime, genres, version
+        FROM movies
+        WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
+        AND (genres @> $2 OR $2 = '{}')     
+        ORDER BY %s %s, id ASC
+		OFFSET %d LIMIT %d`,
+		orderCol, orderDirection, offsetBy, limit,
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(genres))
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	movies := []*Movie{}
+
+	for rows.Next() {
+		movie := Movie{}
+
+		err := rows.Scan(
+			&movie.ID,
+			&movie.CreatedAt,
+			&movie.Title,
+			&movie.Year,
+			&movie.Runtime,
+			pq.Array(&movie.Genres),
+			&movie.Version,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		movies = append(movies, &movie)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
+
 type MockMovieModel struct{}
 
 func (m MockMovieModel) Insert(movie *Movie) error {
@@ -160,4 +218,9 @@ func (m MockMovieModel) Update(movie *Movie) error {
 
 func (m MockMovieModel) Delete(id int64) error {
 	return nil
+}
+
+func (m MockMovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, error) {
+	movies := []*Movie{}
+	return movies, nil
 }
