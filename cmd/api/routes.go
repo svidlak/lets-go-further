@@ -7,7 +7,7 @@ import (
 func (app *application) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /v1/healthcheck", app.healthcheckHandler)
+	mux.Handle("GET /healthcheck", app.middlewaresWrapper(app.healthcheckHandler))
 
 	mux.Handle("GET /v1/movies", app.middlewaresWrapper(app.listMoviesHandler))
 	mux.Handle("POST /v1/movies", app.middlewaresWrapper(app.createMovieHandler))
