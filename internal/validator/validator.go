@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"net/mail"
 	"regexp"
 )
 
@@ -49,4 +50,9 @@ func Unique[T comparable](values []T) bool {
 	}
 
 	return len(values) == len(uniqueValues)
+}
+
+func Email(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
