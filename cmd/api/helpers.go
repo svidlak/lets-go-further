@@ -84,7 +84,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 	js, err := json.Marshal(data)
 	if err != nil {
-		app.logger.Print(err)
+		app.logger.Error(err, nil)
 		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
 		return err
 	}

@@ -145,7 +145,7 @@ func (m MovieModel) Delete(id int64) error {
 	return nil
 }
 
-func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, error) {
+func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, Metadata, error) {
 	var (
 		orderCol       = filters.sortColumn()
 		orderDirection = filters.sortDirection()
@@ -154,11 +154,11 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Mo
 	)
 
 	query := fmt.Sprintf(`
-        SELECT id, created_at, title, year, runtime, genres, version
-        FROM movies
-        WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
-        AND (genres @> $2 OR $2 = '{}')     
-        ORDER BY %s %s, id ASC
+		SELECT count(*) OVER(), id, created_at, title, year, runtime, genres, version
+		FROM movies
+		WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
+		AND (genres @> $2 OR $2 = '{}')     
+		ORDER BY %s %s, id ASC
 		OFFSET %d LIMIT %d`,
 		orderCol, orderDirection, offsetBy, limit,
 	)
@@ -168,17 +168,19 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Mo
 
 	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(genres))
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
 	defer rows.Close()
 
+	totalRecords := 0
 	movies := []*Movie{}
 
 	for rows.Next() {
 		movie := Movie{}
 
 		err := rows.Scan(
+			&totalRecords,
 			&movie.ID,
 			&movie.CreatedAt,
 			&movie.Title,
@@ -189,17 +191,19 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Mo
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		movies = append(movies, &movie)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return movies, nil
+	metadata := calculateMetadata(totalRecords, offsetBy, limit)
+
+	return movies, metadata, nil
 }
 
 type MockMovieModel struct{}
@@ -220,7 +224,10 @@ func (m MockMovieModel) Delete(id int64) error {
 	return nil
 }
 
-func (m MockMovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, error) {
+func (m MockMovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, Metadata, error) {
 	movies := []*Movie{}
-	return movies, nil
+
+	metadata := calculateMetadata(1, 1, 1)
+
+	return movies, metadata, nil
 }
