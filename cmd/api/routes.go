@@ -15,5 +15,10 @@ func (app *application) routes() *http.ServeMux {
 	mux.Handle("PATCH /v1/movies/{id}", app.middlewaresWrapper(app.updateMovieHandler))
 	mux.Handle("DELETE /v1/movies/{id}", app.middlewaresWrapper(app.deleteMovieHandler))
 
+	mux.Handle("POST /v1/users", app.middlewaresWrapper(app.registerUserHandler))
+	mux.Handle("PUT /v1/users/activated", app.middlewaresWrapper(app.activateUserHandler))
+
+	mux.Handle("PUT /v1/tokens/authentication", app.middlewaresWrapper(app.activateUserHandler))
+
 	return mux
 }
