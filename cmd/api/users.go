@@ -40,7 +40,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 
 	v := validator.New()
 
-	data.ValidateUser(v, user)
+	data.ValidateUserRegistration(v, user)
 
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)

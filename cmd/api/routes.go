@@ -18,7 +18,7 @@ func (app *application) routes() *http.ServeMux {
 	mux.Handle("POST /v1/users", app.middlewaresWrapper(app.registerUserHandler))
 	mux.Handle("PUT /v1/users/activated", app.middlewaresWrapper(app.activateUserHandler))
 
-	mux.Handle("PUT /v1/tokens/authentication", app.middlewaresWrapper(app.activateUserHandler))
+	mux.Handle("POST /v1/tokens/authentication", app.middlewaresWrapper(app.createAuthenticationTokenHandler))
 
 	return mux
 }

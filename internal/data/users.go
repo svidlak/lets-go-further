@@ -30,7 +30,7 @@ type UserModel struct {
 	DB *sql.DB
 }
 
-func ValidateUser(v *validator.Validator, u *User) {
+func ValidateUserRegistration(v *validator.Validator, u *User) {
 	v.Check(u.Name != "", "name", "must be provided")
 	v.Check(len(u.Name) <= 500, "name", "must not be more than 500 bytes long")
 
@@ -44,6 +44,15 @@ func ValidateUser(v *validator.Validator, u *User) {
 	if u.Password.hash == nil {
 		panic("missing password hash for user")
 	}
+}
+
+func ValidateUserLogin(v *validator.Validator, u *User) {
+	v.Check(u.Email != "", "email", "must be provided")
+	v.Check(validator.Email(u.Email), "email", "valid email must be provided")
+
+	v.Check(*u.Password.plaintext != "", "password", "must be provided")
+	v.Check(len(*u.Password.plaintext) >= 8, "password", "must be at least 8 bytes long")
+	v.Check(len(*u.Password.plaintext) <= 72, "password", "must not be more than 72 bytes long")
 }
 
 func (p *password) Set(plaintextPassword string) error {
