@@ -205,29 +205,3 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filter) ([]*Mo
 
 	return movies, metadata, nil
 }
-
-type MockMovieModel struct{}
-
-func (m MockMovieModel) Insert(movie *Movie) error {
-	return nil
-}
-
-func (m MockMovieModel) Get(id int64) (*Movie, error) {
-	return &Movie{}, nil
-}
-
-func (m MockMovieModel) Update(movie *Movie) error {
-	return nil
-}
-
-func (m MockMovieModel) Delete(id int64) error {
-	return nil
-}
-
-func (m MockMovieModel) GetAll(title string, genres []string, filters Filter) ([]*Movie, Metadata, error) {
-	movies := []*Movie{}
-
-	metadata := calculateMetadata(1, 1, 1)
-
-	return movies, metadata, nil
-}

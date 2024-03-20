@@ -172,10 +172,29 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 	})
 }
 
+func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		if !permissions.Include(code) {
+			app.notPermittedResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
+
 func (app *application) publicRoutesMiddlewaresWrapper(handler http.HandlerFunc) http.Handler {
 	return app.recoverPanic(app.rateLimit(app.logRequest(app.authenticate(handler))))
 }
 
-func (app *application) privateRoutesMiddlewaresWrapper(handler http.HandlerFunc) http.Handler {
-	return app.recoverPanic(app.rateLimit(app.logRequest(app.authenticate(app.requireAuthenticatedUser(app.requireActivatedUser(handler))))))
+func (app *application) privateRoutesMiddlewaresWrapper(code string, handler http.HandlerFunc) http.Handler {
+	return app.recoverPanic(app.rateLimit(app.logRequest(app.authenticate(app.requireAuthenticatedUser(app.requireActivatedUser(app.requirePermission(code, handler)))))))
 }
